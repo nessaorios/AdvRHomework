@@ -1,0 +1,299 @@
+---
+title: "**Advanced Data Programming with R - Assignment 1**"
+author: "Vanessa Carvalho - 25267189"
+date: today
+date-format: long
+format: 
+  pdf: 
+    include-in-header: preamble.tex
+    theme: default
+    css: assignment_ctheme.css 
+    slide-number: true
+    toc: false
+    center-title-slide: true
+    transition: slide
+    code-fold: true
+    code-overflow: wrap
+    fontsize: 1.2em
+editor: visual
+execute: 
+  eval: true
+  echo: true
+---
+
+# Introduction
+
+For this first Assignment, I have selected \textcolor{green}{Brazil}, \textcolor{red}{Angola} and the \textcolor{blue}{United Kingdom} to explore and analyse their *Economic, Social, Environmental, Health, Education, Development and Energy* data.
+
+As countries with quite a different development throughout the decades, I have selected the following specific indicators to be used in **comparisons** between each of them:
+
+1.  Life expectancy at birth (total) years
+2.  Net migration
+3.  Unemployment, total (% of total labor force) (modeled ILO estimate)
+
+# Description of datasets and indicators
+
+:::::: columns
+::: {.column width="30%"}
+*Life expectancy*
+
+Indicates the number of **years** a newborn infant would live if prevailing patterns of mortality at the time of its birth were to stay the same throughout its life.
+:::
+
+::: {.column width="30%"}
+*Net migration*
+
+The net **total of migrants** during the period, that is, the number of immigrants minus the number of emigrants, including both citizens and non citizens.
+:::
+
+::: {.column width="30%"}
+*Unemployment*
+
+The share of the labor force that is **without work** but available for and seeking employment.
+:::
+::::::
+
+\newpage
+
+## Data Import and Overview
+
+Here we import the datasets on Education, Health, and Energy using `fread()` from the `data.table` package.
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+#| results: hide 
+library(data.table)
+
+#read each dataset
+bra <- fread("indicators_bra.csv")
+ago <- fread("indicators_ago.csv")
+gbr <- fread("indicators_gbr.csv")
+
+```
+
+------------------------------------------------------------------------
+
+## Resumed Version of the Dataset (Table Preview)
+
+Each table includes the first 6 rows of the datasets
+
+### - \textcolor{green}{Brazil} demographics
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 2
+library(knitr)
+
+# this code is for printing only the first 5 rows, minus the second one
+bra_preview <- head(bra, 6)
+bra_preview <- bra_preview[-2]
+bra_preview[, `Indicator Code` := NULL]
+kable(bra_preview)
+
+```
+
+------------------------------------------------------------------------
+
+### - \textcolor{red}{Angola} demographics
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 2
+library(knitr)
+
+# this code is for printing only the first 5 rows, minus the second one
+ago_preview <- head(ago, 6)
+ago_preview <- ago_preview[-2]
+ago_preview[, `Indicator Code` := NULL]
+kable(ago_preview)
+
+```
+
+------------------------------------------------------------------------
+
+### - \textcolor{blue}{United Kingdom} demographics
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 2
+library(knitr)
+
+# this code is for printing only the first 5 rows, minus the second one
+gbr_preview <- head(gbr, 6)
+gbr_preview <- gbr_preview[-2]
+gbr_preview[, `Indicator Code` := NULL]
+kable(gbr_preview)
+
+```
+
+# Data Cleaning
+
+In this step each dataset will be cleaned by *keeping only my target indicators* and **removing the duplicates**
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+# Defining indicators to keep
+indicators_keep <- 
+  c("Life expectancy at birth, total (years)", 
+    "Net migration", "Unemployment, total (% of total labor force) (modeled ILO estimate)")
+
+# Filter the datasets
+bra_clean <- bra[`Indicator Name`%in% indicators_keep]
+ago_clean <- ago[`Indicator Name`%in% indicators_keep]
+gbr_clean <- gbr[`Indicator Name`%in% indicators_keep]
+
+# Remove the duplicates
+bra_clean <- unique(bra_clean)
+ago_clean <- unique(ago_clean)
+gbr_clean <- unique(gbr_clean)
+
+```
+
+# Merging Datasets
+
+The following process is to merge both datasets for an easier look and comparative analysis of the indicators
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+all_data <- rbindlist(list(bra_clean, ago_clean, gbr_clean),
+                      use.names = TRUE, fill = TRUE)
+```
+
+## Table preview of merged data with basic summary statistics
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+# Average of each indicator value for each country
+summary_stats <- all_data[
+  , .(Average = mean(Value, na.rm = TRUE)), 
+  keyby = .(`Country Name`, `Indicator Name`)
+]
+
+# Renaming the indicators for a cleaner look
+summary_stats[,`Indicator Name`:= fcase(
+  `Indicator Name` == "Life expectancy at birth, total (years)",
+  "Life Expectancy",  `Indicator Name` == "Net migration", "Net migration",
+  `Indicator Name` == 
+    "Unemployment, total (% of total labor force) (modeled ILO estimate)", "Unemployment"
+)]
+
+kable(summary_stats)
+```
+
+# Key Analysis and Plots
+
+***Two*** analysis were done to assess the following:
+
+1.  How each indicator has evolved year by year within and across countries
+
+2.  A comparison in between countries for each indicator in the last year **(2024)**
+
+------------------------------------------------------------------------
+
+## Analysis 1 - Trend over Time
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+# Renaming indicators for better look
+all_data[,`Indicator Name`:= fcase(
+  `Indicator Name` == "Life expectancy at birth, total (years)", 
+  "Life Expectancy",  `Indicator Name` == "Net migration", "Net Migration",
+  `Indicator Name` == 
+    "Unemployment, total (% of total labor force) (modeled ILO estimate)", "Unemployment"
+)]
+
+# Creating the trend analysis
+trend <- all_data[
+  `Indicator Name` %in% c("Life Expectancy", "Net Migration", "Unemployment"),
+  .(Average = mean(Value, na.rm = TRUE)),
+  by = .(`Year`, `Country Name`, `Indicator Name`)]
+
+library(ggplot2)
+
+ggplot(trend, aes(x = Year, y = Average, color = `Country Name`)) +
+  geom_line(size = 1) +
+  facet_wrap(~ `Indicator Name`, scales = "free_y") +
+  labs(title = "Trends of Indicators Over Time by Country",
+       y = "Value",
+       x = "Year") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+------------------------------------------------------------------------
+
+## Analysis 2 - Cross-Country Comparison
+
+For this analysis, only `Net Migration` and `Unemployment` are considered due to absence of data for 2024 on `Life Expectancy`
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+latest_year <- max(all_data$Year, na.rm = TRUE)
+comparison <- all_data[Year == latest_year,
+  .(Value = mean(Value, na.rm = TRUE)),
+  by = .(`Country Name`,`Indicator Name`)
+]
+
+ggplot(comparison, aes(x = `Country Name`, y = Value, fill = `Country Name`)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ `Indicator Name`, scales = "free_y") +
+  labs(title = paste("Indicator Comparison Across Countries in", latest_year),
+       y = "Value",
+       x = "Country") +
+  theme_minimal()
+
+```
+
+# Insights and Findings
+
+## Trend over Time
+
+This trend analysis have shown:
+
+-   Across 6 decades, `Life Expectancy` considerably increased for all 3 countries. Whilst \textcolor{green}{Brazil} and the \textcolor{blue}{United Kingdom} had a consistent exponential gain throughout, \textcolor{red}{Angola} had its major boost in the past 20 years
+
+-   Regarding the `Net Migration`, each country had their own different development, with very unstable peaks throughout the years. The \textcolor{blue}{United Kingdom} presented the highest increase overall, whilst \textcolor{green}{Brazil} kept negative numbers for the vast majority of the years. \textcolor{red}{Angola} on the other hand had its numbers quite stable, until it started to decrease around 2010, reaching a 0 mark in most recent years
+
+-   `Unemployment` data was only captured from the year 1991, showing \textcolor{red}{Angola} with the highest incidence of unemployed people. The \textcolor{blue}{United Kingdom} and \textcolor{green}{Brazil} numbers varied, with many high and low peaks in different years.
+
+## Cross-Country Comparison
+
+Giving a closer look into the indicators in the past year, the database for these 3 countries have demonstrated:
+
+-   The \textcolor{blue}{United Kingdom} have had the *highest* `Net Migration`, but the *lowest* `Unemployment` rate
+
+-   \textcolor{green}{Brazil} was the country with *lowest* `Net Migration`, however with an *average* `Unemployment` rate
+
+-   \textcolor{red}{Angola} barely presented `Net Migration` in 2024, with its rate *close to 0*, compensating in its `Unemployment` rate which was the *highest* among all countries.
+
+# Conclusion
+
+-   Compiling both analysis made for this assignment, an overall difference in the demographics of all 3 countries is noted. The results exemplify the development of countries like the \textcolor{blue}{United Kingdom}, the slow progress of \textcolor{green}{Brazil} and the under development of an African nation like \textcolor{red}{Angola}
+
+-   A special mention to the reflection of the **Covid-19 pandemic break in 2020**, where `Net Migration` differed in the \textcolor{blue}{United Kingdom} (with a drastic decrease) and a big peak in \textcolor{green}{Brazil}. Also, with a massive peak in Unemployment in all 3 countries.

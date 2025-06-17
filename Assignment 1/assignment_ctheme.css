@@ -1,0 +1,38 @@
+/* Change title colors and fonts */
+.reveal h1 {
+  color: darkcyan;
+  font-family: 'Times New Roman', serif;
+}
+
+/* Apply a background color to slide content */
+.reveal section {
+  font-size: 1.1em;
+  background-color: #fdfdfd;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Style slide numbers */
+.reveal .slide-number {
+  font-size: 0.8em;
+  color: #666;
+}
+
+/* Style code blocks */
+.reveal pre code {
+  background-color: #f0f0f0;
+  border-radius: 6px;
+  padding: 0.6em;
+  font-size: 0.9em;
+  color: #222;
+}
+
+/* Change bullet points */
+.reveal ul {
+  list-style-type: square;
+}
+
+/* Change link color */
+.reveal a {
+  color: darkblue;
+}
