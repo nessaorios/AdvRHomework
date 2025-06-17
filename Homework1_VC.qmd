@@ -47,7 +47,6 @@ For this homework I have chosen a dataset of **Risk Factors Associated with Low 
 
 # Statistical Analysis
 
-The aim was to develop a logistic regression model for predicting low birth weight, using . 
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE, eval=TRUE}
 library(MASS)
