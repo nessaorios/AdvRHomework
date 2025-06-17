@@ -94,4 +94,8 @@ The results show that **smoking** during pregnancy had a strong and significant 
 
 Conversely, variables such as **mother's age** and **number of prior pregnancies** (`ptl`, `lwt`, etc.) did not show a significant effect in this dataset. Some of the confidence intervals crossed 1, indicating statistical non-significance.
 
+# Changes for GitHub
+
+Line changed to commit for GitHub Homework
+
 
